@@ -175,7 +175,7 @@ function results(){
   $('mVol').textContent='±'+nf(T.vol*100,1)+'%';$('mVolS').textContent=B?`S&P 500: ±${nf(BT.vol*100,1)}%`:'Hoe hoger, hoe onrustiger';
   $('dockL').innerHTML=`<b>${sign(T.cagr)}</b> per jaar`;$('dockR').innerHTML=`<b>${W?neg(W.depth,0):'0%'}</b> grootste daling`;
   const limName=R.lim==='__fx'?'de euro-wisselkoers':(R.lim==='__user'?null:(byId[R.lim]?byId[R.lim].name:null));
-  let span=`Getest over ${nf(T.yrs,0)} jaar, van ${dateOf(s)} tot ${dateOf(R.e)}.`;
+  let span=`Getest over ${nf(T.yrs,0)} jaar, van ${dateOf(R.lim==='__user'?s+1:s)} tot ${dateOf(R.e)}.`;
   if(R.lim==='__user')span+=' Deze startdatum heb je zelf gekozen.';else if(R.s>0&&limName)span+=` Eerder kan niet, omdat er voor ${limName} pas cijfers zijn vanaf ${dateOf(R.s)}.`;
   const t=totalW();if(Math.abs(t-100)>=.01)span+=` Je percentages tellen op tot ${nf(t,1)}%. Voor deze test zijn ze omgerekend naar 100%.`;
   $('span').textContent=span;
@@ -184,6 +184,7 @@ function results(){
   if(miss){$('warn').hidden=false;$('warn').textContent=`Deze test begint na de crash van 2008, dus de grootste daling hier is waarschijnlijk milder dan een echt slechtste geval.${R.lim!=='__user'?' Beleggingen met een langere geschiedenis geven een eerlijker beeld.':' Kies een eerdere startdatum om die crash mee te nemen.'}`;}
   else if(T.yrs<15){$('warn').hidden=false;$('warn').textContent='Minder dan 15 jaar aan cijfers. Wees extra voorzichtig met deze uitkomsten.';}
   else $('warn').hidden=true;
+  if(S.from>0&&R.lim!=='__user'&&limName){$('warn').hidden=false;$('warn').textContent=`Je koos januari ${S.from}, maar voor ${limName} zijn pas cijfers vanaf ${dateOf(R.s)}. De test begint daarom dan, en ook je inleg telt pas vanaf dat moment.`+(miss?' De crash van 2008 zit er dus niet in.':'');}
   const eps=T.eps.filter(e=>e.depth<=-.05).slice(0,6);
   $('crashTop').innerHTML=eps.length?eps.slice(0,3).map(e=>{const max=Math.abs(eps[0].depth);return `<li><b>${eventName(s+e.tr,e.tr-e.pk)}</b><strong>${neg(e.depth,0)}</strong><i style="width:${(Math.abs(e.depth)/Math.max(max,.5)*100).toFixed(1)}%"></i><small>${e.rec===null?'Nog niet helemaal hersteld':'Weer terug na '+dur(e.rec-e.pk)}</small></li>`;}).join(''):'<li>Geen daling van 5% of meer in deze periode.</li>';
   $('crashes').innerHTML=eps.length?`<thead><tr><th>Wat er gebeurde</th><th class="n">Daling</th><th>Van hoog naar laag</th><th>Weer terug</th>${B?'<th class="n">S&amp;P 500 toen</th>':''}</tr></thead><tbody>`+eps.map(e=>{
@@ -293,7 +294,7 @@ function future(){
   $('f50').textContent=money(v(2));$('f10').textContent=money(v(0));$('f90').textContent=money(v(4));
   const buy=Math.round(100/Math.pow(1+inf,S.years));
   $('fExplain').innerHTML=inf>0?`<strong>Dit zijn bedragen in geld van vandaag.</strong> Alles wordt duurder: over ${S.years} jaar koop je voor ${sym()}100 wat je nu voor ${sym()}${buy} koopt. Daarom is hier al teruggerekend wat je er echt voor kunt kopen.`:'<strong>Je hebt inflatie op 0% gezet.</strong> De bedragen houden geen rekening met stijgende prijzen.';
-  $('futSmall').textContent=`Zelf leg je ${money(P.paidReal)} in. Reken onderweg op een tussentijdse daling van ongeveer ${Math.abs(Math.round(P.crashTypical*100))}%. Dit is geen voorspelling.`;
+  $('futSmall').textContent=`De komende ${S.years} jaar leg je zelf ${money(P.paidReal)} in. Deze berekening begint vandaag, dus de startdatum van de test verandert dit bedrag niet. Reken onderweg op een tussentijdse daling van ongeveer ${Math.abs(Math.round(P.crashTypical*100))}%. Dit is geen voorspelling.`;
   const w2008=2007*12+9-(1970*12),miss=R.s>w2008;
   const fw=$('futWarn');
   if(miss){fw.hidden=false;fw.textContent=`Deze berekening kan alleen putten uit ${Math.round(T.yrs)} jaar zonder de crash van 2008, dus de slechte uitkomsten zijn waarschijnlijk te mild.`;}

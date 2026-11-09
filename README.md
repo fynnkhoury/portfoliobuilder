@@ -31,7 +31,7 @@ Ga in de repository naar Settings, dan Pages. Kies bij Source "Deploy from a bra
 
 ## Tekst aanpassen
 
-Teksten over beleggingen en de grootste namen staan in `js/assets.js`. Verhoog na een wijziging `CACHE` in `sw.js` naar bijvoorbeeld `crash-test-v5`, zodat bezoekers de nieuwe versie krijgen.
+Teksten over beleggingen en de grootste namen staan in `js/assets.js`. Verhoog na een wijziging `CACHE` in `sw.js` naar bijvoorbeeld `crash-test-v6`, zodat bezoekers de nieuwe versie krijgen.
 
 ## Bronnen en beperkingen
 
