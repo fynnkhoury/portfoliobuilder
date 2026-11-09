@@ -80,21 +80,23 @@
     <p class="span" id="span"></p>
     <section class="shelf" aria-label="Grootste crashes"><h2>De grootste dalingen</h2><ul class="hits" id="crashTop"></ul></section>
     <section class="future" aria-label="Toekomst">
-      <h2>En in de toekomst? <button type="button" class="q" data-term="sim" aria-label="Hoe werkt dit?">?</button></h2>
+      <h2>En in de toekomst?</h2>
       <div class="ctl"><label class="lab big-lab" for="fYears">Over <strong id="fYearsV"></strong> jaar</label><input type="range" id="fYears" min="1" max="50" step="1"></div>
+      <p class="how" id="fHow"></p>
       <div class="outcomes">
-        <div><span class="ico c-down" data-ic="cloud-rain"></span><span class="tile-t">Pech</span><strong id="f10"></strong><small>1 op de 10 eindigt lager</small></div>
-        <div class="mid"><span class="ico c-soft" data-ic="cloud-sun"></span><span class="tile-t">In het midden</span><strong id="f50"></strong><small>De helft eindigt hoger</small></div>
-        <div><span class="ico c-up" data-ic="sun"></span><span class="tile-t">Geluk</span><strong id="f90"></strong><small>1 op de 10 eindigt hoger</small></div>
+        <div><span class="ico c-down" data-ic="cloud-rain"></span><span class="tile-t">Als het tegenvalt</span><small id="r10"></small><strong id="f10"></strong></div>
+        <div class="mid"><span class="ico c-soft" data-ic="cloud-sun"></span><span class="tile-t" id="t50">Zoals in de test</span><small id="r50"></small><strong id="f50"></strong></div>
+        <div><span class="ico c-up" data-ic="sun"></span><span class="tile-t">Als het meevalt</span><small id="r90"></small><strong id="f90"></strong></div>
       </div>
+      <div class="futbar"><div class="vbar" aria-hidden="true"><i id="barFut"></i></div><div class="vlabels"><span id="barFutL"></span><strong id="barFutR"></strong></div></div>
       <p class="explain"><span class="ico c-soft" data-ic="wallet"></span><span id="fExplain"></span></p>
-      <p class="span" id="futSmall"></p>
       <p class="notice" id="futWarn" hidden></p>
       <div class="chart-box"><div class="legend" id="fanLegend"></div><div id="fan"></div></div>
+      <p class="span" id="futSmall"></p>
       <details class="fold">
-        <summary><span class="ico-s" data-ic="sliders-horizontal"></span>Berekening aanpassen</summary>
+        <summary><span class="ico-s" data-ic="sliders-horizontal"></span>Zelf getallen invullen</summary>
         <div class="fold-in controls">
-          <div class="ctl"><span class="lab">Toekomstig rendement</span><div class="chips" id="fH"></div></div>
+          <div class="ctl" style="width:170px"><label class="lab" for="fRate">Eigen rendement % per jaar</label><input type="number" id="fRate" min="-5" max="30" step="0.5" placeholder="Uit de test"></div>
           <div class="ctl" style="width:120px"><label class="lab" for="fInf">Inflatie % <button type="button" class="q" data-term="infl" aria-label="Wat is inflatie?">?</button></label><input type="number" id="fInf" min="0" max="10" step="0.5"></div>
         </div>
       </details>
@@ -129,7 +131,7 @@
     <li>Oudere cijfers zijn deels gereconstrueerd. Obligaties van voor 1986 tot 1991, wereldwijde aandelen van voor 1990, wereldwijde obligaties van voor 2007 en goudfondsen van voor 2004 zijn berekend uit rentes, indexen of goudprijzen. Bij elke belegging staat waar de cijfers vandaan komen.</li>
     <li>Een test kan pas beginnen als er voor elke belegging cijfers zijn. Beleggingen die later begonnen, kunnen niet laten zien hoe het ging in eerdere crashes.</li>
     <li>Euro-bedragen zijn dollars omgerekend tegen de koers van die maand, zonder valutabescherming. Vóór 1999 is de Nederlandse gulden gebruikt, tegen de vaste omrekenkoers.</li>
-    <li>De toekomstberekening voorspelt niets. Maandbedragen stijgen daarin mee met de inflatie, zodat ze hun koopkracht houden. In de terugblik blijven ze gelijk en gaan ze in dezelfde verdeling.</li>
+    <li>De toekomst is een rekenvoorbeeld met een vast rendement per jaar: het rendement uit je test, 2 procentpunt lager en 2 procentpunt hoger. Maandbedragen houden daarin hun koopkracht. In de terugblik blijven ze gelijk en gaan ze in dezelfde verdeling.</li>
     <li>Cijfers van Pershing Square zijn de koers met dividend van de Amerikaanse notering (PSHZF) van dezelfde aandelen, vanaf februari 2015. Ze volgen het gepubliceerde rendement op de beurs van Londen met zo’n 3 procentpunt per jaar verschil. China, India en Europa komen uit dezelfde maandbron.</li>
     <li>De grootste bedrijven zijn een momentopname van het Amerikaanse fonds waaruit de cijfers komen. De Europese variant volgt dezelfde of een vergelijkbare index. Bij bedrijven met twee soorten aandelen, zoals Alphabet, kan het belang verdeeld staan over twee regels.</li>
     <li>Niet opgenomen: een fonds met alleen Nederlandse aandelen, de meeste actief beheerde fondsen en Bitcoin, omdat daar geen controleerbare maandcijfers voor beschikbaar waren.</li>

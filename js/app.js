@@ -5,7 +5,7 @@ const byId=Object.fromEntries(ASSETS.map(a=>[a.id,a]));
 const $=id=>document.getElementById(id);
 const MON=['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'];
 const KEY='portfolio-crash-test-v2',OLD='portfolio-crash-test-v1';
-let S={h:{sp500:60,tmid:40},cur:'EUR',reb:'year',from:0,preset:'6040',start:10000,monthly:200,scale:'log',years:25,hair:0,infl:2.5,view:'real'};
+let S={h:{sp500:60,tmid:40},cur:'EUR',reb:'year',from:0,preset:'6040',start:10000,monthly:200,scale:'log',years:25,hair:0,rate:null,infl:2.5,view:'real'};
 
 try{let s=JSON.parse(localStorage.getItem(KEY)||'null');const fresh=!s;if(fresh)s=JSON.parse(localStorage.getItem(OLD)||'null');if(s&&s.h&&Object.keys(s.h).every(k=>byId[k])){S=Object.assign(S,s);if(fresh)S.cur='EUR';}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
@@ -30,9 +30,8 @@ $('from').innerHTML='<option value="0">Zo vroeg mogelijk</option>'+[1975,1980,19
 $('filters').innerHTML=[['all','Alles'],['country','Landen'],['stock','Aandelen'],['bond','Obligaties'],['real','Goud en vastgoed'],['mine','Mijn mix']].map(([k,l],i)=>`<button type="button" class="chip" data-f="${k}" aria-pressed="${i===0}">${l}</button>`).join('');
 let filter='all',query='';
 $('scaleC').innerHTML='<button type="button" class="q" data-term="log" aria-label="Uitleg schaal">?</button>'+[['log','Log-schaal'],['lin','Gewone schaal']].map(([k,l])=>`<button type="button" class="chip" data-s="${k}" aria-pressed="false">${l}</button>`).join('');
-$('fH').innerHTML=[[0,'Zoals vroeger'],[.01,'1 procentpunt minder'],[.02,'2 procentpunt minder']].map(([k,l])=>`<button type="button" class="chip" data-h="${k}" aria-pressed="false">${l}</button>`).join('');
 $('scaleC').addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(!b)return;S.scale=b.dataset.s;syncControls();draw();save();});
-$('fH').addEventListener('click',e=>{const b=e.target.closest('[data-h]');if(!b)return;S.hair=+b.dataset.h;syncControls();future();save();});
+$('fRate').addEventListener('input',e=>{const v=parseFloat(e.target.value);S.rate=isFinite(v)?Math.max(-5,Math.min(30,v)):null;cancelAnimationFrame(fr);fr=requestAnimationFrame(()=>{future();save();});});
 const num=(v,lo,hi)=>{v=parseFloat(v);if(!isFinite(v))v=lo;return Math.max(lo,Math.min(hi,v));};
 let fr=0;
 $('amtStart').addEventListener('input',e=>{S.start=num(e.target.value,0,1e9);schedule();});
@@ -71,7 +70,7 @@ function syncControls(){
   [...$('cur').children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.c===S.cur));
   $('reb').value=S.reb;$('from').value=String(S.from);
   [...$('scaleC').querySelectorAll('[data-s]')].forEach(b=>b.setAttribute('aria-pressed',b.dataset.s===S.scale));
-  [...$('fH').children].forEach(b=>b.setAttribute('aria-pressed',+b.dataset.h===S.hair));
+  if(document.activeElement!==$('fRate'))$('fRate').value=(S.rate===null||S.rate===undefined)?'':S.rate;
   if(document.activeElement!==$('amtStart'))$('amtStart').value=S.start;
   if(document.activeElement!==$('amtMonth'))$('amtMonth').value=S.monthly;
   $('fYears').value=S.years;$('fYearsV').textContent=S.years;
@@ -83,7 +82,7 @@ let raf=0;function schedule(){cancelAnimationFrame(raf);raf=requestAnimationFram
 
 /* ---------- catalogue ---------- */
 let cardStats={},statsCur=null;
-function riskOf(d){const x=-d;return x<.2?['Laag','r1']:x<.4?['Gemiddeld','r2']:x<.65?['Hoog','r3']:['Zeer hoog','r4'];}
+function riskOf(id){const l=+Object.keys(RISK).find(k=>RISK[k].includes(id));return [['','']][0]&&[{1:'Laag',2:'Gemiddeld',3:'Hoog',4:'Zeer hoog'}[l],'r'+l,RISK_WHY[l]];}
 function ensureCardStats(){
   if(statsCur===S.cur)return;statsCur=S.cur;
   ASSETS.forEach(a=>{const o={cur:S.cur,rebalance:'never'};const r=E.simulate(D,{[a.id]:1},o);const s=E.stats(D,r,o);cardStats[a.id]={c:s.cagr,d:s.worst?s.worst.depth:0,since:dateOf(r.s),end:dateOf(r.e),mult:r.V[r.N]};});
@@ -91,13 +90,13 @@ function ensureCardStats(){
 function namesOf(id){const h=HOLD[id];if(!h)return '';if(h.n)return h.n.slice(0,3).map(x=>x[0]).join(', ');if(h.list&&id==='psh')return h.list.slice(0,3).join(', ');return '';}
 function ic(n){return ICONS[n]||'';}
 function aIcon(id){const a=byId[id];if(FLAGS[id])return `<span class="ico flag"><img src="${FLAGS[id]}" alt=""></span>`;return `<span class="ico c-${a.c}">${ic(AICON[id])}</span>`;}
-function meter(rk){const lvl={r1:1,r2:2,r3:3,r4:4}[rk[1]];return `<div class="meter ${rk[1]}"><span>${[1,2,3,4].map(i=>`<i class="${i<=lvl?'on':''}"></i>`).join('')}</span>Risico ${rk[0].toLowerCase()}</div>`;}
+function meter(rk){const lvl=+rk[1].slice(1);return `<div class="meter ${rk[1]}"><span>${[1,2,3,4].map(i=>`<i class="${i<=lvl?'on':''}"></i>`).join('')}</span>Risico ${rk[0].toLowerCase()}</div>`;}
 function firstSentence(t){const m=t.match(/^.*?[.!?](\s|$)/);return m?m[0].trim():t;}
 function library(){
   ensureCardStats();
   const match=a=>(filter==='all'||(filter==='mine'?S.h[a.id]!==undefined:(filter==='country'?a.g==='country':a.c===filter)))&&(!query||(a.name+' '+a.what+' '+a.role+' '+a.risk+' '+namesOf(a.id)).toLowerCase().includes(query));
   const html=GROUPS.map(([g,l])=>{const items=ASSETS.filter(a=>a.g===g&&match(a));if(!items.length)return '';
-    return `<div class="shelf"><span class="lab">${l}</span><div class="cards">${items.map(a=>{const st=cardStats[a.id],on=S.h[a.id]!==undefined,rk=riskOf(st.d);return `<article class="card${on?' on':''}" data-card="${a.id}">
+    return `<div class="shelf"><span class="lab">${l}</span><div class="cards">${items.map(a=>{const st=cardStats[a.id],on=S.h[a.id]!==undefined,rk=riskOf(a.id);return `<article class="card${on?' on':''}" data-card="${a.id}">
       <div class="card-top">${aIcon(a.id)}<h3><button type="button" class="linkish" data-info="${a.id}">${a.name}</button></h3></div>
       <p>${firstSentence(a.what)}</p>
       ${meter(rk)}
@@ -115,10 +114,10 @@ function holdingsHTML(id){
 function openDlg(){const d=$('info');try{if(!d.open)d.showModal();}catch(e){d.setAttribute('open','');}d.scrollTop=0;}
 function openInfo(id){
   ensureCardStats();
-  const a=byId[id],st=cardStats[id],on=S.h[id]!==undefined,rk=riskOf(st.d);
+  const a=byId[id],st=cardStats[id],on=S.h[id]!==undefined,rk=riskOf(id);
   $('infoBody').innerHTML=`<div class="dlg-top"><div class="dlg-head">${aIcon(id)}<div style="display:grid;gap:2px"><span class="lab">${CLASSES[a.c]}</span><h2>${a.name}</h2></div></div><button type="button" class="x" data-close aria-label="Sluiten">×</button></div>
   <p style="margin:0">${a.what}</p>
-  <div class="dlg-figs"><div><strong>${sign(st.c)}</strong><small>rendement per jaar</small></div><div><strong class="neg">${neg(st.d,0)}</strong><small>grootste daling</small></div><div>${meter(rk)}<small>op basis van de grootste daling</small></div></div>
+  <div class="dlg-figs"><div><strong>${sign(st.c)}</strong><small>rendement per jaar</small></div><div><strong class="neg">${neg(st.d,0)}</strong><small>grootste daling</small></div><div>${meter(rk)}<small>${rk[2]} <button type="button" class="q" data-term="risico" aria-label="Uitleg risico">?</button></small></div></div>
   <p class="span" style="margin:0">${sym()}1.000 in ${st.since} was in ${st.end} ${money(1000*st.mult)} waard, voor belasting. Dat is het verleden, geen belofte.</p>
   ${holdingsHTML(id)}
   <div class="dlg-sec"><span class="lab"><span class="ico-s" style="color:var(--up)">${ic('thumbs-up')}</span>Waarom mensen dit kopen</span><p>${a.role}</p></div>
@@ -137,7 +136,7 @@ document.addEventListener('click',e=>{
   const dt=e.target.closest('[data-dt]');if(dt){addOrRemove(dt.dataset.dt);openInfo(dt.dataset.dt);return;}
   if(e.target===$('info')){$('info').close();}
 });
-$('gloss').innerHTML=Object.values(TERMS).filter(t=>t[0]!=='Hoe werkt de toekomstberekening?').map(t=>`<div><dt>${t[0]}</dt><dd>${t[1]}</dd></div>`).join('');
+$('gloss').innerHTML=Object.values(TERMS).map(t=>`<div><dt>${t[0]}</dt><dd>${t[1]}</dd></div>`).join('');
 function libraryOn(){}
 $('shelves').addEventListener('click',e=>{const id=e.target.dataset.t;if(!id)return;addOrRemove(id);});
 
@@ -149,7 +148,7 @@ function results(){
   totals();
   const w=weights(),ids=Object.keys(w),has=ids.length>0;
   $('out').style.opacity=has?1:.35;
-  if(!has){['rCagr','rDD','mGrow','mYear','mUnder','mVol','mLoss','f50','f10','f90'].forEach(i=>$(i).textContent='\u2013');['rCagrSub','rDDSub','mGrowS','mYearS','mVolS','span','divLine','mLossS','fExplain','futSmall','barPaidL','barEnd','barFrom','barLowL'].forEach(i=>$(i).textContent='');$('crashTop').innerHTML='';$('barPaid').style.width='0';$('barLow').style.width='0';$('fan').innerHTML='';$('fanLegend').innerHTML='';$('futWarn').hidden=true;$('crashes').innerHTML='';$('pairs').innerHTML='';$('years').innerHTML='';$('plot').innerHTML='';$('legend').innerHTML='';$('warn').hidden=true;$('dockL').textContent='Voeg beleggingen toe';$('dockR').textContent='';cur=null;return;}
+  if(!has){['rCagr','rDD','mGrow','mYear','mUnder','mVol','mLoss','f50','f10','f90'].forEach(i=>$(i).textContent='\u2013');['rCagrSub','rDDSub','mGrowS','mYearS','mVolS','span','divLine','mLossS','fExplain','futSmall','fHow','r10','r50','r90','barFutL','barFutR','barPaidL','barEnd','barFrom','barLowL'].forEach(i=>$(i).textContent='');$('crashTop').innerHTML='';$('barPaid').style.width='0';$('barLow').style.width='0';$('fan').innerHTML='';$('fanLegend').innerHTML='';$('futWarn').hidden=true;$('crashes').innerHTML='';$('pairs').innerHTML='';$('years').innerHTML='';$('plot').innerHTML='';$('legend').innerHTML='';$('warn').hidden=true;$('dockL').textContent='Voeg beleggingen toe';$('dockR').textContent='';cur=null;return;}
   const opt={cur:S.cur,rebalance:S.reb,fromYear:S.from||0};
   const R=E.simulate(D,w,opt),T=E.stats(D,R,opt);
   const onlySP=ids.length===1&&ids[0]==='sp500';
@@ -284,52 +283,58 @@ function draw(){
   hit.addEventListener('pointermove',move);hit.addEventListener('pointerdown',move);
   hit.addEventListener('pointerleave',()=>{cross.setAttribute('visibility','hidden');tip.hidden=true;});
 }
+function growth(start,c,years,r,inf){
+  const real=(1+r)/(1+inf)-1,g=Math.pow(1+Math.max(real,-.99),1/12),pts=[start];let a=start;
+  for(let m=1;m<=years*12;m++){a=a*g+c;if(m%12===0)pts.push(a);}
+  return pts;
+}
 function future(){
   if(!cur)return;
-  const {R,T,amt}=cur;
-  const inf=S.infl/100;
-  const P=E.project(R.V,T.cagr,{years:S.years,start:amt.start,c:amt.c,haircut:S.hair,inflation:inf});
-  const defl=m=>Math.pow(1+inf,m/12);
-  const v=i=>P.bands[i][P.steps-1]/defl(P.months);
-  $('f50').textContent=money(v(2));$('f10').textContent=money(v(0));$('f90').textContent=money(v(4));
+  const {R,T,amt}=cur,inf=S.infl/100,own=S.rate!==null&&S.rate!==undefined;
+  const base=own?S.rate/100:T.cagr,lo=base-.02,hi=base+.02;
+  const L=growth(amt.start,amt.c,S.years,lo,inf),M=growth(amt.start,amt.c,S.years,base,inf),H=growth(amt.start,amt.c,S.years,hi,inf);
+  const P=[];for(let y=0;y<=S.years;y++)P.push(amt.start+amt.c*12*y);
+  const n=S.years;
+  $('f10').textContent=money(L[n]);$('f50').textContent=money(M[n]);$('f90').textContent=money(H[n]);
+  $('r10').textContent=sign(lo)+' per jaar';$('r50').textContent=sign(base)+' per jaar';$('r90').textContent=sign(hi)+' per jaar';
+  $('t50').textContent=own?'Met jouw rendement':'Zoals in de test';
+  const start=dateOf(R.lim==='__user'?R.s+1:R.s),end=dateOf(R.e);
+  $('fHow').innerHTML=`<strong>Zo rekenen we:</strong> je begint met ${money(amt.start)}${amt.c>0?` en legt elke maand ${money(amt.c)} in`:''}. Je geld groeit elk jaar ${sign(base)}. `+(own?'Dat rendement heb je zelf ingevuld.':`Dat is het rendement uit je test hierboven (${start} tot ${end}). Kies je een andere mix of startdatum, dan verandert dit getal mee.`);
+  const paid=P[n];
+  $('barFut').style.width=Math.max(2,Math.min(100,paid/Math.max(M[n],paid)*100)).toFixed(1)+'%';
+  $('barFutL').textContent=`Zelf ingelegd ${money(paid)}`;
+  $('barFutR').textContent=M[n]>paid?`Groei ${money(M[n]-paid)}`:'Geen groei';
   const buy=Math.round(100/Math.pow(1+inf,S.years));
-  $('fExplain').innerHTML=inf>0?`<strong>Dit zijn bedragen in geld van vandaag.</strong> Alles wordt duurder: over ${S.years} jaar koop je voor ${sym()}100 wat je nu voor ${sym()}${buy} koopt. Daarom is hier al teruggerekend wat je er echt voor kunt kopen.`:'<strong>Je hebt inflatie op 0% gezet.</strong> De bedragen houden geen rekening met stijgende prijzen.';
-  $('futSmall').textContent=`De komende ${S.years} jaar leg je zelf ${money(P.paidReal)} in. Deze berekening begint vandaag, dus de startdatum van de test verandert dit bedrag niet. Reken onderweg op een tussentijdse daling van ongeveer ${Math.abs(Math.round(P.crashTypical*100))}%. Dit is geen voorspelling.`;
-  const w2008=2007*12+9-(1970*12),miss=R.s>w2008;
-  const fw=$('futWarn');
-  if(miss){fw.hidden=false;fw.textContent=`Deze berekening kan alleen putten uit ${Math.round(T.yrs)} jaar zonder de crash van 2008, dus de slechte uitkomsten zijn waarschijnlijk te mild.`;}
-  else if(T.yrs<20){fw.hidden=false;fw.textContent=`Deze berekening is gebaseerd op slechts ${Math.round(T.yrs)} jaar, en dat is weinig.`;}
+  $('fExplain').innerHTML=inf>0?`<strong>Dit is wat het echt waard is, in geld van vandaag.</strong> Alles wordt duurder: over ${S.years} jaar koop je voor ${sym()}100 wat je nu voor ${sym()}${buy} koopt. Die ${nf(S.infl,1)}% inflatie per jaar is er al vanaf gehaald.`:'<strong>Je hebt inflatie op 0% gezet.</strong> De bedragen houden geen rekening met stijgende prijzen.';
+  $('futSmall').textContent=`In het echt gaat het niet in een rechte lijn. ${T.worst?`Deze mix daalde in de test ooit ${Math.abs(Math.round(T.worst.depth*100))}%, en dat kan weer gebeuren. `:''}Dit is een rekenvoorbeeld, geen voorspelling.`;
+  const w2008=2007*12+9-(1970*12),miss=R.s>w2008,fw=$('futWarn');
+  if(!own&&miss){fw.hidden=false;fw.textContent=`Dit rendement komt uit maar ${Math.round(T.yrs)} jaar, zonder de crash van 2008. Reken er niet op dat het zo blijft.`;}
+  else if(!own&&T.yrs<20){fw.hidden=false;fw.textContent=`Dit rendement komt uit maar ${Math.round(T.yrs)} jaar. Dat is kort, dus wees voorzichtig.`;}
   else fw.hidden=true;
-  drawFan(P,true,defl);
+  drawFut(L,M,H,P,own);
 }
-function drawFan(P,real,defl){
+function drawFut(Lo,Mi,Hi,P,own){
   const box=$('fan'),W=Math.max(300,box.clientWidth||700),phone=W<520;
-  const L=phone?46:58,Rm=phone?10:92,H=phone?240:290,Tp=12,Bt=24,G=H-Tp-Bt,iw=W-L-Rm,n=P.steps-1;
-  const val=(i,s)=>P.bands[i][s]/defl(s*P.step);
-  const x=s=>L+s/n*iw;
-  const im=Math.pow(1+P.inflation,1/12);
-  const paid=[];{let p=cur.amt.start,c=cur.amt.c,m=0;for(let s=0;s<=n;s++){const t=s*P.step;while(m<t){p+=c;c*=im;m++;}paid.push(real?cur.amt.start+cur.amt.c*t:p);}}
-  let hi=val(4,n);for(let s=0;s<=n;s++)hi=Math.max(hi,val(4,s),paid[s]);hi*=1.04;
+  const L=phone?46:58,Rm=phone?10:128,H=phone?230:280,Tp=12,Bt=24,G=H-Tp-Bt,iw=W-L-Rm,n=S.years;
+  const x=y=>L+y/n*iw;
+  let hi=0;[Lo,Mi,Hi,P].forEach(a=>a.forEach(v=>{hi=Math.max(hi,v);}));hi=hi*1.04||1;
   const y=v=>Tp+G-(v/hi)*G;
+  const base=new Date().getFullYear();
   let g='';niceLin(hi).forEach(v=>{g+=`<line class="grid" x1="${L}" x2="${W-Rm}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}"/><text class="tick" x="${L-7}" y="${(y(v)+4).toFixed(1)}" text-anchor="end">${fmtT(v)}</text>`;});
-  const yrs=P.months/12,st=[1,2,5,10].find(s=>yrs/s<=iw/(phone?48:64))||10,base=new Date().getFullYear();
-  for(let t=0;t<=yrs+1e-6;t+=st){g+=`<text class="tick" x="${x(t*12/P.step).toFixed(1)}" y="${H-6}" text-anchor="${t===0?'start':'middle'}">${base+t}</text>`;}
-  const band=(lo,up,op)=>{let d='';for(let s=0;s<=n;s++)d+=(s?'L':'M')+x(s).toFixed(1)+' '+y(val(up,s)).toFixed(1);for(let s=n;s>=0;s--)d+='L'+x(s).toFixed(1)+' '+y(val(lo,s)).toFixed(1);return `<path d="${d}Z" fill="var(--port)" fill-opacity="${op}"/>`;};
-  g+=band(0,4,.13)+band(1,3,.17);
-  const line=arr=>arr.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join('');
-  g+=`<path d="${line(paid)}" fill="none" stroke="var(--ink3)" stroke-width="1.5" stroke-linejoin="round"/>`;
-  const med=[];for(let s=0;s<=n;s++)med.push(val(2,s));
-  g+=`<path d="${line(med)}" fill="none" stroke="var(--port)" stroke-width="2" stroke-linejoin="round"/>`;
-  if(!phone){let yt=y(val(4,n)),ym=y(med[n]),yb=y(val(0,n)),yp=y(paid[n]);if(ym-yt<15)yt=ym-15;if(yb-ym<15)yb=ym+15;if(Math.abs(yp-yb)<15)yp=yb+15;
-    g+=`<text class="panel-label" x="${W-Rm+7}" y="${(yt+4).toFixed(1)}">1 op 10 hoger</text><text class="mark-label" x="${W-Rm+7}" y="${(ym+4).toFixed(1)}">Midden</text><text class="panel-label" x="${W-Rm+7}" y="${(yb+4).toFixed(1)}">1 op 10 lager</text><text class="panel-label" x="${W-Rm+7}" y="${(yp+4).toFixed(1)}">Ingelegd</text>`;}
+  const st=[1,2,5,10].find(s=>n/s<=iw/(phone?48:64))||10;
+  for(let t=0;t<=n;t+=st)g+=`<text class="tick" x="${x(t).toFixed(1)}" y="${H-6}" text-anchor="${t===0?'start':'middle'}">${base+t}</text>`;
+  const line=a=>a.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join('');
+  g+=`<path d="${line(P)}" fill="none" stroke="var(--ink3)" stroke-width="1.5" stroke-linejoin="round"/><path d="${line(Lo)}" fill="none" stroke="var(--bench)" stroke-width="2" stroke-linejoin="round"/><path d="${line(Hi)}" fill="none" stroke="var(--class-bond)" stroke-width="2" stroke-linejoin="round"/><path d="${line(Mi)}" fill="none" stroke="var(--port)" stroke-width="2.5" stroke-linejoin="round"/>`;
+  const midName=own?'Jouw rendement':'Zoals in de test';
+  if(!phone){let a=[{v:y(Hi[n]),t:'Als het meevalt',c:'panel-label'},{v:y(Mi[n]),t:midName,c:'mark-label'},{v:y(Lo[n]),t:'Als het tegenvalt',c:'panel-label'},{v:y(P[n]),t:'Zelf ingelegd',c:'panel-label'}];for(let i=1;i<a.length;i++)if(a[i].v-a[i-1].v<16)a[i].v=a[i-1].v+16;a.forEach(l=>{g+=`<text class="${l.c}" x="${W-Rm+7}" y="${(l.v+4).toFixed(1)}">${l.t}</text>`;});}
   g+=`<g id="fc" visibility="hidden"><line id="fcL" y1="${Tp}" y2="${Tp+G}" stroke="var(--ink3)" stroke-width="1"/><circle id="fcM" r="4" fill="var(--port)" stroke="var(--sheet)" stroke-width="2"/></g><rect id="fhit" x="${L}" y="${Tp}" width="${iw}" height="${G}" fill="transparent"/>`;
-  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Mogelijke uitkomsten over ${S.years} jaar">${g}</svg><div id="ftip" hidden></div>`;
-  $('fanLegend').innerHTML=`<span><i style="background:var(--port)"></i>Middelste uitkomst</span><span><i style="background:var(--port);opacity:.45;height:9px"></i>De middelste helft</span><span><i style="background:var(--port);opacity:.2;height:9px"></i>8 op de 10 uitkomsten</span><span><i style="background:var(--ink3)"></i>Ingelegd</span>`;
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Rekenvoorbeeld over ${n} jaar">${g}</svg><div id="ftip" hidden></div>`;
+  $('fanLegend').innerHTML=`<span><i style="background:var(--port)"></i>${midName}</span><span><i style="background:var(--class-bond)"></i>Als het meevalt</span><span><i style="background:var(--bench)"></i>Als het tegenvalt</span><span><i style="background:var(--ink3)"></i>Zelf ingelegd</span>`;
   const svg=box.firstChild,tip=$('ftip'),hit=$('fhit');
-  function move(ev){const r=svg.getBoundingClientRect(),sx=W/r.width,px=(ev.clientX-r.left)*sx;const s=Math.max(0,Math.min(n,Math.round((px-L)/iw*n))),xx=x(s);
-    $('fc').setAttribute('visibility','visible');$('fcL').setAttribute('x1',xx);$('fcL').setAttribute('x2',xx);$('fcM').setAttribute('cx',xx);$('fcM').setAttribute('cy',y(med[s]));
-    const t=s*P.step;tip.hidden=false;tip.innerHTML=`<strong>Jaar ${nf(t/12,t%12?1:0)} (${Math.floor(base+t/12)})</strong><br>Midden ${money(med[s])}<br>1 op 10 lager ${money(val(0,s))}<br>1 op 10 hoger ${money(val(4,s))}<br>Ingelegd ${money(paid[s])}`;
-    const tw=tip.offsetWidth,bw=box.clientWidth;let lx=xx/sx+12;if(lx+tw>bw)lx=xx/sx-12-tw;if(lx<0)lx=0;tip.style.left=lx+'px';tip.style.top=Math.max(0,(ev.clientY-r.top)-50)+'px';}
+  function move(ev){const r=svg.getBoundingClientRect(),sx=W/r.width,px=(ev.clientX-r.left)*sx,s=Math.max(0,Math.min(n,Math.round((px-L)/iw*n))),xx=x(s);
+    $('fc').setAttribute('visibility','visible');$('fcL').setAttribute('x1',xx);$('fcL').setAttribute('x2',xx);$('fcM').setAttribute('cx',xx);$('fcM').setAttribute('cy',y(Mi[s]));
+    tip.hidden=false;tip.innerHTML=`<strong>${base+s}, na ${s} jaar</strong><br>${midName}: ${money(Mi[s])}<br>Als het meevalt: ${money(Hi[s])}<br>Als het tegenvalt: ${money(Lo[s])}<br>Zelf ingelegd: ${money(P[s])}`;
+    const tw=tip.offsetWidth,bw=box.clientWidth;let lx=xx/sx+12;if(lx+tw>bw)lx=xx/sx-12-tw;if(lx<0)lx=0;tip.style.left=lx+'px';tip.style.top=Math.max(0,(ev.clientY-r.top)-60)+'px';}
   hit.addEventListener('pointermove',move);hit.addEventListener('pointerdown',move);hit.addEventListener('pointerleave',()=>{$('fc').setAttribute('visibility','hidden');tip.hidden=true;});
 }
 let rt=0;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{draw();future();},120);});
