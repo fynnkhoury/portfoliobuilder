@@ -1,6 +1,6 @@
 {
-  "name": "Portfolio Crash Test",
-  "short_name": "Crash Test",
+  "name": "Portfolio samensteller",
+  "short_name": "Samensteller",
   "description": "Stel een portefeuille samen en zie het rendement en de grootste crash.",
   "lang": "nl",
   "start_url": "./",
