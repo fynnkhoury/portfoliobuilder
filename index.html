@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Portfolio Crash Test</title>
+<meta name="description" content="Stel een beleggingsportefeuille samen en zie het rendement, de grootste crash en mogelijke toekomsten. In gewone taal uitgelegd.">
+<meta name="theme-color" content="#14212C">
+<meta property="og:title" content="Portfolio Crash Test">
+<meta property="og:description" content="Stel een portefeuille samen en zie wat die opleverde en hoe hard hij viel.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>Portfolio Crash Test</h1>
+  <p class="lede">Kies waarin je zou willen beleggen en zie wat dat in het verleden opleverde, hoe hard het viel en wat er in de toekomst zou kunnen gebeuren.</p>
+  <ol class="steps">
+    <li><strong>Kies een voorbeeld</strong> hieronder, of stel je eigen mix samen.</li>
+    <li><strong>Kijk naar het verleden:</strong> hoeveel groeide je geld en hoe diep was de grootste val?</li>
+    <li><strong>Kijk vooruit:</strong> wat kan het worden als je elke maand bijlegt?</li>
+  </ol>
+  <p class="risknote">Beleggen brengt risico met zich mee: je kunt een deel van je inleg verliezen. Deze pagina legt uit en geeft geen beleggingsadvies.</p>
+</header>
+<section class="controls" aria-label="Instellingen">
+  <div class="ctl" style="flex:1 1 420px;min-width:0"><span class="lab">Begin met een bekend voorbeeld</span><div class="chips" id="presets"></div></div>
+  <div class="ctl"><span class="lab">Bedragen in</span><div class="chips" id="cur"></div></div>
+  <div class="ctl"><label class="lab" for="reb">Herbalanceren <button type="button" class="q" data-term="rebal" aria-label="Wat is herbalanceren?">?</button></label><select id="reb"><option value="year">Eens per jaar</option><option value="month">Elke maand</option><option value="never">Nooit</option></select></div>
+  <div class="ctl"><label class="lab" for="from">Test begint</label><select id="from"></select></div>
+</section>
+<p class="preset-by" id="presetBy"></p>
+<main class="bench">
+  <aside class="load" aria-label="Jouw portefeuille">
+    <div class="load-head"><h2>Jouw portefeuille</h2><span class="total" id="total"></span></div>
+    <div class="strip" id="strip" aria-hidden="true"></div>
+    <div class="keyrow" id="stripKey"></div>
+    <div class="money"><div><label class="lab" for="amtStart">Startbedrag</label><input type="number" id="amtStart" min="0" step="500"></div><div><label class="lab" for="amtMonth">Elke maand erbij</label><input type="number" id="amtMonth" min="0" step="25"></div></div>
+    <div class="rows" id="rows"></div>
+    <div class="load-actions"><a class="btn solid" href="#catalogue" id="addLink" style="text-decoration:none">Belegging toevoegen</a><button class="btn" id="scale" type="button">Maak samen 100%</button><button class="btn" id="clear" type="button">Alles wissen</button></div>
+  </aside>
+  <div class="out" id="out">
+    <div class="read">
+      <div><span class="lab">Rendement per jaar <button type="button" class="q" data-term="cagr" aria-label="Wat is rendement per jaar?">?</button></span><span class="big" id="rCagr"></span><span class="sub" id="rCagrSub"></span></div>
+      <div><span class="lab">Grootste val <button type="button" class="q" data-term="crash" aria-label="Wat is de grootste val?">?</button></span><span class="big bad" id="rDD"></span><span class="sub" id="rDDSub"></span></div>
+    </div>
+    <div class="minis">
+      <div><span class="lab" id="mGrowL"></span><strong id="mGrow"></strong><small id="mGrowS"></small></div>
+      <div><span class="lab">Grootste verlies in geld <button type="button" class="q" data-term="money" aria-label="Uitleg">?</button></span><strong id="mLoss" class="neg"></strong><small id="mLossS"></small></div>
+      <div><span class="lab">Slechtste kalenderjaar</span><strong id="mYear"></strong><small id="mYearS"></small></div>
+      <div><span class="lab">Langst onder water <button type="button" class="q" data-term="under" aria-label="Wat is onder water?">?</button></span><strong id="mUnder"></strong><small>Van een hoogste punt tot weer daarboven</small></div>
+      <div><span class="lab">Normale schommeling <button type="button" class="q" data-term="swing" aria-label="Wat is schommeling?">?</button></span><strong id="mVol"></strong><small id="mVolS"></small></div>
+    </div>
+    <p class="span" id="span"></p>
+    <p class="notice" id="warn" hidden></p>
+    <div class="chart-box">
+      <div class="chart-head"><div class="legend" id="legend"></div><div class="chips" id="scaleC"></div></div>
+      <div id="plot"></div>
+    </div>
+    <section class="shelf" aria-label="Grootste crashes"><h2>De grootste crashes van deze portefeuille</h2><div class="tbl"><table id="crashes"></table></div></section>
+    <section class="future" aria-label="Toekomstberekening">
+      <div class="fut-head"><div><h2>Wat zou er kunnen gebeuren? <button type="button" class="q" data-term="sim" aria-label="Hoe werkt dit?">?</button></h2><p class="span" id="futIntro"></p></div></div>
+      <div class="fut-ctl">
+        <div class="ctl" style="flex:1 1 200px"><label class="lab" for="fYears">Aantal jaren vooruit: <span id="fYearsV"></span></label><input type="range" id="fYears" min="1" max="50" step="1"></div>
+        <div class="ctl"><span class="lab">Toekomstig rendement</span><div class="chips" id="fH"></div></div>
+        <div class="ctl" style="width:112px"><label class="lab" for="fInf">Inflatie % <button type="button" class="q" data-term="infl" aria-label="Wat is inflatie?">?</button></label><input type="number" id="fInf" min="0" max="10" step="0.5"></div>
+        <div class="ctl"><span class="lab">Bedragen tonen in</span><div class="chips" id="fView"></div></div>
+      </div>
+      <div class="minis fut-minis">
+        <div><span class="lab">Middelste uitkomst</span><strong id="f50"></strong><small>De helft van de berekeningen eindigt hoger</small></div>
+        <div><span class="lab">Pech</span><strong id="f10"></strong><small>1 op de 10 eindigt lager</small></div>
+        <div><span class="lab">Geluk</span><strong id="f90"></strong><small>1 op de 10 eindigt hoger</small></div>
+        <div><span class="lab">Jij legt in totaal in</span><strong id="fPaid"></strong><small id="fBelow"></small></div>
+        <div><span class="lab">Crash onderweg</span><strong id="fCrash" class="neg"></strong><small id="fCrashS"></small></div>
+      </div>
+      <p class="notice" id="futWarn" hidden></p>
+      <div class="chart-box"><div class="legend" id="fanLegend"></div><div id="fan"></div></div>
+    </section>
+    <section class="shelf" aria-label="Spreiding"><h2>Verschillen je beleggingen echt van elkaar? <button type="button" class="q" data-term="corr" aria-label="Uitleg">?</button></h2><p class="span" id="divLine"></p><ul class="pair" id="pairs"></ul></section>
+    <details><summary>Toon elk jaar</summary><div class="years" id="years"></div></details>
+  </div>
+</main>
+<section class="shelf" id="catalogue" style="scroll-margin-top:12px;gap:20px">
+  <div class="cat-head"><div><h2>Waarin kun je beleggen?</h2><p id="catSub"></p></div>
+  <div style="display:flex;flex-wrap:wrap;gap:8px"><div class="chips" id="filters"></div><label class="lab" for="q" style="position:absolute;left:-9999px">Zoek een belegging</label><input id="q" type="search" placeholder="Zoek, bijvoorbeeld olie of inflatie"></div></div>
+  <div id="shelves" style="display:grid;gap:24px"></div>
+</section>
+<section class="notes" aria-label="Begrippen">
+  <h2>Begrippen uitgelegd</h2>
+  <dl class="gloss" id="gloss"></dl>
+</section>
+<section class="notes" aria-label="Hoe de cijfers zijn gemaakt">
+  <h2>Hoe de cijfers zijn gemaakt</h2>
+  <ul>
+    <li>Alle cijfers komen uit echte maandcijfers met herbelegd dividend, tot en met oktober 2026. Fondscijfers zijn na de kosten van het fonds, maar voor brokerkosten en belasting. In Nederland betaal je in 2026 in box 3 over beleggingen ongeveer 2,16% per jaar over het deel boven de vrijstelling van €59.357.</li>
+    <li>De grootste val is gemeten van maandeinde tot maandeinde, dus het echte dieptepunt binnen een maand was iets dieper.</li>
+    <li>Oudere cijfers zijn deels gereconstrueerd. Obligaties van voor 1986 tot 1991, wereldwijde aandelen van voor 1990, wereldwijde obligaties van voor 2007 en goudfondsen van voor 2004 zijn berekend uit rentes, indexen of goudprijzen. Bij elke belegging staat waar de cijfers vandaan komen.</li>
+    <li>Een test kan pas beginnen als er voor elke belegging cijfers zijn. Beleggingen die later begonnen, kunnen niet laten zien hoe het ging in eerdere crashes.</li>
+    <li>Euro-bedragen zijn dollars omgerekend tegen de koers van die maand, zonder valutabescherming. Vóór 1999 is de Nederlandse gulden gebruikt, tegen de vaste omrekenkoers.</li>
+    <li>De toekomstberekening voorspelt niets. Maandbedragen stijgen daarin mee met de inflatie, zodat ze hun koopkracht houden. In de terugblik blijven ze gelijk en gaan ze in dezelfde verdeling.</li>
+    <li>Cijfers van Pershing Square zijn de koers met dividend van de Amerikaanse notering (PSHZF) van dezelfde aandelen, vanaf februari 2015. Ze volgen het gepubliceerde rendement op de beurs van Londen met zo’n 3 procentpunt per jaar verschil. China, India en Europa komen uit dezelfde maandbron.</li>
+    <li>Grootste namen zijn een momentopname van het Amerikaanse fonds waaruit de cijfers komen. De Europese variant volgt dezelfde of een vergelijkbare index. Bij bedrijven met twee soorten aandelen, zoals Alphabet, kan het belang verdeeld staan over twee regels.</li>
+    <li>Niet opgenomen: een fonds met alleen Nederlandse aandelen, de meeste actief beheerde fondsen en Bitcoin, omdat daar geen controleerbare maandcijfers voor beschikbaar waren.</li>
+    <li>Het verleden laat zien wat er één keer is gebeurd, in een periode die voor Amerikaanse aandelen en obligaties uitzonderlijk goed was.</li>
+    <li>Bronnen: <a href="https://github.com/mwilczynska/financial_datasets" target="_blank" rel="noopener">financial_datasets</a> (lange reeksen), <a href="https://github.com/Johnbrick123/sp500-data" target="_blank" rel="noopener">sp500-data</a> (fonds- en aandeelkoersen met dividend), <a href="https://github.com/datasets/exchange-rates" target="_blank" rel="noopener">wisselkoersen Federal Reserve</a>, <a href="https://www.digrin.com/stocks/detail/PSHZF/price" target="_blank" rel="noopener">Digrin</a> (Pershing Square, China, India, Europa), <a href="https://stockanalysis.com/etf/spy/holdings/" target="_blank" rel="noopener">StockAnalysis</a> (grootste namen).</li>
+  </ul>
+</section>
+</div>
+<div class="dock" aria-hidden="true"><span id="dockL"></span><span id="dockR"></span></div>
+<dialog id="info" aria-label="Meer informatie"><div id="infoBody"></div></dialog>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/assets.js"></script>
+<script src="js/app.js"></script>
+<script>if('serviceWorker' in navigator){addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
+</body>
+</html>
